@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battleship Game</title>
+    <style>
+        /* CSS styles */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        .game-container {
+            margin: 20px auto;
+            max-width: 600px;
+        }
+
+        .game-board {
+            display: inline-block;
+            vertical-align: top;
+            margin: 10px;
+        }
+
+        .game-board div {
+            width: 30px;
+            height: 30px;
+            border: 1px solid black;
+            display: inline-block;
+            text-align: center;
+            line-height: 30px;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #message {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Battleship Game</h1>
+        <div class="game-board" id="player-board">
+            <!-- Player's board -->
+        </div>
+        <div class="game-board" id="opponent-board">
+            <!-- Opponent's board -->
+        </div>
+        <button id="start-game">Start Game</button>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        // JavaScript code
+        document.addEventListener('DOMContentLoaded', function() {
+            const playerBoard = document.getElementById('player-board');
+            const opponentBoard = document.getElementById('opponent-board');
+            const startGameBtn = document.getElementById('start-game');
+            const messageDisplay = document.getElementById('message');
+
+            const boardSize = 10; // Size of the game board
+            let playerShips = []; // Array to store player's ships
+            let opponentShips = []; // Array to store opponent's ships
+
+            // Function to create game boards
+            function createBoard(boardElement) {
+                for (let i = 0; i < boardSize; i++) {
+                    for (let j = 0; j < boardSize; j++) {
+                        const cell = document.createElement('div');
+                        cell.dataset.row = i;
+                        cell.dataset.col = j;
+                        cell.classList.add('cell');
+                        boardElement.appendChild(cell);
+                    }
+                }
+            }
+
+            // Initialize player and opponent boards
+            createBoard(playerBoard);
+            createBoard(opponentBoard);
+
+            // Function to start the game
+            startGameBtn.addEventListener('click', function() {
+                // Logic to start the game
+                messageDisplay.textContent = 'Game started!';
+                // You can start implementing game logic here
+            });
+
+        });
+    </script>
+</body>
+</html>
