@@ -20,6 +20,7 @@
             display: inline-block;
             vertical-align: top;
             margin: 10px;
+            position: relative; /* Required for positioning ships */
         }
 
         .game-board .cell {
@@ -30,6 +31,16 @@
             text-align: center;
             line-height: 30px;
             cursor: pointer; /* Add cursor pointer for interactive cells */
+        }
+
+        .ship {
+            width: 60px; /* Adjust ship size as needed */
+            height: 30px;
+            background-color: #ccc;
+            border: 1px solid #666;
+            position: absolute;
+            z-index: 100; /* Ensure ships appear above cells */
+            pointer-events: none; /* Prevent ships from intercepting pointer events */
         }
 
         button {
@@ -67,6 +78,13 @@
             const messageDisplay = document.getElementById('message');
 
             const boardSize = 10; // Size of the game board
+            const shipTypes = [
+                { name: 'Carrier', length: 5 },
+                { name: 'Battleship', length: 4 },
+                { name: 'Cruiser', length: 3 },
+                { name: 'Submarine', length: 3 },
+                { name: 'Destroyer', length: 2 }
+            ];
 
             // Function to create game boards
             function createBoard(boardElement) {
@@ -76,7 +94,6 @@
                         cell.dataset.row = i;
                         cell.dataset.col = j;
                         cell.classList.add('cell');
-                        cell.textContent = `${i},${j}`; // For testing, display cell coordinates
                         boardElement.appendChild(cell);
                     }
                 }
@@ -86,20 +103,54 @@
             createBoard(playerBoard);
             createBoard(opponentBoard);
 
-            // Function to handle cell click
-            function cellClickHandler(event) {
-                const clickedCell = event.target;
-                const row = clickedCell.dataset.row;
-                const col = clickedCell.dataset.col;
-                console.log(`Clicked cell: ${row},${col}`);
-                // Add your logic here to mark the cell or handle game actions
+            // Function to create draggable ships
+            function createShips() {
+                const shipsContainer = document.createElement('div');
+                shipsContainer.classList.add('ships-container');
+
+                shipTypes.forEach((ship, index) => {
+                    const shipElement = document.createElement('div');
+                    shipElement.classList.add('ship');
+                    shipElement.dataset.shipType = ship.name;
+                    shipElement.draggable = true;
+                    shipElement.textContent = ship.name;
+                    shipElement.style.top = `${index * 40}px`; // Adjust ship initial position
+                    shipsContainer.appendChild(shipElement);
+                });
+
+                document.body.appendChild(shipsContainer);
             }
 
-            // Add click event listeners to all cells
-            const allCells = document.querySelectorAll('.cell');
-            allCells.forEach(cell => {
-                cell.addEventListener('click', cellClickHandler);
-            });
+            // Create draggable ships on page load
+            createShips();
+
+            // Function to handle drag start event
+            function dragStart(event) {
+                event.dataTransfer.setData('text/plain', event.target.dataset.shipType);
+            }
+
+            // Function to handle drag over event (allow drop)
+            function dragOver(event) {
+                event.preventDefault();
+            }
+
+            // Function to handle drop event
+            function drop(event) {
+                event.preventDefault();
+                const shipType = event.dataTransfer.getData('text/plain');
+                const shipElement = document.querySelector(`.ship[data-ship-type="${shipType}"]`);
+                const cell = event.target.closest('.cell');
+                if (cell && !cell.querySelector('.ship')) {
+                    const newShip = shipElement.cloneNode(true);
+                    newShip.style.pointerEvents = 'auto'; // Enable pointer events after drop
+                    cell.appendChild(newShip);
+                }
+            }
+
+            // Add event listeners for drag and drop
+            document.addEventListener('dragstart', dragStart);
+            document.addEventListener('dragover', dragOver);
+            document.addEventListener('drop', drop);
 
             // Function to start the game
             startGameBtn.addEventListener('click', function() {
