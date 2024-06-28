@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Battleship Game</title>
     <style>
-        /* CSS styles */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -30,15 +29,15 @@
             border: 1px solid black;
             text-align: center;
             line-height: 30px;
-            cursor: pointer; /* Add cursor pointer for interactive cells */
+            cursor: pointer;
         }
 
         .ship {
-            width: 30px; /* Adjust ship width based on its length */
+            width: 150px;
             height: 30px;
             background-color: #ccc;
             border: 1px solid #666;
-            cursor: grab; /* Show grab cursor for draggable elements */
+            cursor: grab;
             margin: 5px;
         }
 
@@ -79,7 +78,6 @@
     </div>
 
     <script>
-        // JavaScript code
         document.addEventListener('DOMContentLoaded', function() {
             const playerBoard = document.getElementById('player-board');
             const opponentBoard = document.getElementById('opponent-board');
@@ -87,7 +85,7 @@
             const startGameBtn = document.getElementById('start-game');
             const messageDisplay = document.getElementById('message');
 
-            const boardSize = 8; // Size of the game board
+            const boardSize = 8;
             const shipTypes = [
                 { name: 'Carrier', length: 5 },
                 { name: 'Battleship', length: 4 },
@@ -96,11 +94,10 @@
                 { name: 'Destroyer', length: 2 }
             ];
 
-            let playerShips = []; // Array to store player's ships
-            let opponentShips = []; // Array to store opponent's ships
+            let playerShips = [];
+            let opponentShips = [];
             let isGameStarted = false;
 
-            // Function to create game boards
             function createBoard(boardElement) {
                 boardElement.innerHTML = '';
                 for (let i = 0; i < boardSize; i++) {
@@ -119,11 +116,9 @@
                 }
             }
 
-            // Initialize player and opponent boards
             createBoard(playerBoard);
             createBoard(opponentBoard);
 
-            // Function to create draggable ships
             function createShips() {
                 shipsContainer.innerHTML = '';
                 shipTypes.forEach(ship => {
@@ -133,41 +128,33 @@
                     shipElement.dataset.length = ship.length;
                     shipElement.draggable = true;
                     shipElement.textContent = ship.name;
-                    shipElement.style.width = `${ship.length * 30}px`; // Adjust ship length
+                    shipElement.style.width = `${ship.length * 30}px`;
                     shipElement.addEventListener('dragstart', dragStart);
                     shipsContainer.appendChild(shipElement);
                 });
             }
 
-            // Create draggable ships on page load
             createShips();
 
-            // Function to handle drag start event
             function dragStart(event) {
                 event.dataTransfer.setData('text/plain', event.target.dataset.shipType);
                 event.dataTransfer.setData('ship-length', event.target.dataset.length);
             }
 
-            // Function to handle drag over event (allow drop)
             function dragOver(event) {
                 event.preventDefault();
             }
 
-            // Function to handle drop event
             function drop(event) {
                 event.preventDefault();
                 const shipType = event.dataTransfer.getData('text/plain');
                 const shipLength = parseInt(event.dataTransfer.getData('ship-length'), 10);
                 const cell = event.target.closest('.cell');
 
-                // Only allow drop on player board
                 if (cell && cell.closest('#player-board')) {
-                    // Check if the cell is valid for dropping the ship
                     if (isValidDrop(cell, shipLength)) {
-                        // Create and place the ship on the board
                         placeShip(cell, shipType, shipLength, 'player');
-                        
-                        // Remove the original ship from the ships container
+
                         const originalShip = document.querySelector(`.ship[data-ship-type="${shipType}"]`);
                         if (originalShip) {
                             originalShip.remove();
@@ -176,17 +163,14 @@
                 }
             }
 
-            // Function to check if the ship can be placed at the specified cell
             function isValidDrop(cell, length) {
                 const row = parseInt(cell.dataset.row, 10);
                 const col = parseInt(cell.dataset.col, 10);
 
-                // Ensure ship fits within the board horizontally
                 if (col + length > boardSize) {
                     return false;
                 }
 
-                // Check if the cells are empty
                 for (let i = 0; i < length; i++) {
                     const targetCell = document.querySelector(`.cell[data-row="${row}"][data-col="${col + i}"]`);
                     if (targetCell.classList.contains('occupied')) {
@@ -196,7 +180,6 @@
                 return true;
             }
 
-            // Function to place the ship on the board
             function placeShip(cell, shipType, length, player) {
                 const row = parseInt(cell.dataset.row, 10);
                 const col = parseInt(cell.dataset.col, 10);
@@ -210,7 +193,7 @@
                 for (let i = 0; i < length; i++) {
                     const targetCell = document.querySelector(`.cell[data-row="${row}"][data-col="${col + i}"]`);
                     targetCell.classList.add('occupied');
-                    targetCell.textContent = shipType.charAt(0); // Display the first letter of the ship type
+                    targetCell.textContent = shipType.charAt(0);
                     ship.positions.push({ row: row, col: col + i });
                 }
 
@@ -221,7 +204,6 @@
                 }
             }
 
-            // Function to randomly place ships for the opponent
             function placeOpponentShips() {
                 shipTypes.forEach(ship => {
                     let placed = false;
@@ -237,7 +219,6 @@
                 });
             }
 
-            // Function to handle player attack
             function playerAttack(event) {
                 if (!isGameStarted) {
                     return;
@@ -265,7 +246,6 @@
                 opponentTurn();
             }
 
-            // Function to handle opponent attack
             function opponentTurn() {
                 const availableCells = Array.from(playerBoard.querySelectorAll('.cell:not(.hit):not(.miss)'));
                 if (availableCells.length === 0) {
@@ -274,7 +254,32 @@
                     return;
                 }
 
-                const randomCell
+                const randomCell = availableCells[Math.floor(Math.random() * availableCells.length)];
+                const row = parseInt(randomCell.dataset.row, 10);
+                const col = parseInt(randomCell.dataset.col, 10);
+                const hit = playerShips.some(ship => ship.positions.some(pos => pos.row === row && pos.col === col));
+
+                if (hit) {
+                    randomCell.classList.add('hit');
+                    randomCell.textContent = 'X';
+                    messageDisplay.textContent = 'Opponent hit your ship!';
+                } else {
+                    randomCell.classList.add('miss');
+                    randomCell.textContent = 'O';
+                    messageDisplay.textContent = 'Opponent missed!';
+                }
+            }
+
+            startGameBtn.addEventListener('click', function() {
+                if (playerShips.length === shipTypes.length) {
+                    isGameStarted = true;
+                    placeOpponentShips();
+                    messageDisplay.textContent = 'Game started! Take your shot.';
+                } else {
+                    messageDisplay.textContent = 'Place all your ships first.';
+                }
+            });
+        });
     </script>
 </body>
 </html>
