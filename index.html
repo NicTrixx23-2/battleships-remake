@@ -17,16 +17,17 @@
         }
 
         .game-board {
-            display: inline-block;
-            vertical-align: top;
-            margin: 10px;
+            display: grid;
+            grid-template-columns: repeat(8, 30px);
+            gap: 1px;
+            justify-content: center;
+            margin: 10px auto;
         }
 
         .game-board .cell {
             width: 30px;
             height: 30px;
             border: 1px solid black;
-            display: inline-block;
             text-align: center;
             line-height: 30px;
             cursor: pointer; /* Add cursor pointer for interactive cells */
@@ -41,8 +42,9 @@
         }
 
         .ships-container {
-            display: inline-block;
-            vertical-align: top;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             margin: 10px;
         }
 
@@ -84,7 +86,7 @@
             const startGameBtn = document.getElementById('start-game');
             const messageDisplay = document.getElementById('message');
 
-            const boardSize = 8; // Size of the game board changed to 8x8
+            const boardSize = 8; // Size of the game board
             const shipTypes = [
                 { name: 'Carrier', length: 5 },
                 { name: 'Battleship', length: 4 },
@@ -92,6 +94,10 @@
                 { name: 'Submarine', length: 3 },
                 { name: 'Destroyer', length: 2 }
             ];
+
+            let playerShips = []; // Array to store player's ships
+            let opponentShips = []; // Array to store opponent's ships
+            let isGameStarted = false;
 
             // Function to create game boards
             function createBoard(boardElement) {
@@ -103,6 +109,9 @@
                         cell.classList.add('cell');
                         cell.addEventListener('dragover', dragOver);
                         cell.addEventListener('drop', drop);
+                        if (boardElement.id === 'opponent-board') {
+                            cell.addEventListener('click', playerAttack);
+                        }
                         boardElement.appendChild(cell);
                     }
                 }
@@ -155,7 +164,7 @@
                     // Check if the cell is valid for dropping the ship
                     if (isValidDrop(cell, shipLength)) {
                         // Create and place the ship on the board
-                        placeShip(cell, shipType, shipLength);
+                        placeShip(cell, shipType, shipLength, 'player');
                         
                         // Remove the original ship from the ships container
                         if (originId === 'ships-container') {
@@ -189,24 +198,72 @@
             }
 
             // Function to place the ship on the board
-            function placeShip(cell, shipType, length) {
+            function placeShip(cell, shipType, length, player) {
                 const row = parseInt(cell.dataset.row, 10);
                 const col = parseInt(cell.dataset.col, 10);
+
+                const ship = {
+                    type: shipType,
+                    length: length,
+                    positions: []
+                };
 
                 for (let i = 0; i < length; i++) {
                     const targetCell = document.querySelector(`.cell[data-row="${row}"][data-col="${col + i}"]`);
                     targetCell.classList.add('occupied');
                     targetCell.textContent = shipType.charAt(0); // Display the first letter of the ship type
+                    ship.positions.push({ row: row, col: col + i });
+                }
+
+                if (player === 'player') {
+                    playerShips.push(ship);
+                } else {
+                    opponentShips.push(ship);
                 }
             }
 
-            // Function to start the game
-            startGameBtn.addEventListener('click', function() {
-                messageDisplay.textContent = 'Game started!';
-                // You can start implementing game logic here
-            });
+            // Function to randomly place ships for the opponent
+            function placeOpponentShips() {
+                shipTypes.forEach(ship => {
+                    let placed = false;
+                    while (!placed) {
+                        const row = Math.floor(Math.random() * boardSize);
+                        const col = Math.floor(Math.random() * (boardSize - ship.length));
+                        const cell = document.querySelector(`#opponent-board .cell[data-row="${row}"][data-col="${col}"]`);
+                        if (isValidDrop(cell, ship.length)) {
+                            placeShip(cell, ship.name, ship.length, 'opponent');
+                            placed = true;
+                        }
+                    }
+                });
+            }
 
-        });
-    </script>
-</body>
-</html>
+            // Function to handle player attack
+            function playerAttack(event) {
+                if (!isGameStarted) {
+                    return;
+                }
+
+                const cell = event.target;
+                if (cell.classList.contains('hit') || cell.classList.contains('miss')) {
+                    return;
+                }
+
+                const row = parseInt(cell.dataset.row, 10);
+                const col = parseInt(cell.dataset.col, 10);
+                const hit = opponentShips.some(ship => ship.positions.some(pos => pos.row === row && pos.col === col));
+
+                if (hit) {
+                    cell.classList.add('hit');
+                    cell.textContent = 'X';
+                    messageDisplay.textContent = 'You hit a ship!';
+                } else {
+                    cell.classList.add('miss');
+                    cell.textContent = 'O';
+                    messageDisplay.textContent = 'You missed!';
+                }
+
+                opponentTurn();
+            }
+
+            // Function to handle opponent attack
