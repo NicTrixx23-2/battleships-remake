@@ -13,7 +13,7 @@
 
         .game-container {
             margin: 20px auto;
-            max-width: 600px;
+            max-width: 800px;
         }
 
         .game-board {
@@ -39,6 +39,7 @@
             background-color: #ccc;
             border: 1px solid #666;
             cursor: grab; /* Show grab cursor for draggable elements */
+            margin: 5px;
         }
 
         .ships-container {
@@ -101,6 +102,7 @@
 
             // Function to create game boards
             function createBoard(boardElement) {
+                boardElement.innerHTML = '';
                 for (let i = 0; i < boardSize; i++) {
                     for (let j = 0; j < boardSize; j++) {
                         const cell = document.createElement('div');
@@ -123,7 +125,8 @@
 
             // Function to create draggable ships
             function createShips() {
-                shipTypes.forEach((ship, index) => {
+                shipsContainer.innerHTML = '';
+                shipTypes.forEach(ship => {
                     const shipElement = document.createElement('div');
                     shipElement.classList.add('ship');
                     shipElement.dataset.shipType = ship.name;
@@ -143,7 +146,6 @@
             function dragStart(event) {
                 event.dataTransfer.setData('text/plain', event.target.dataset.shipType);
                 event.dataTransfer.setData('ship-length', event.target.dataset.length);
-                event.dataTransfer.setData('origin-id', event.target.parentNode.id);
             }
 
             // Function to handle drag over event (allow drop)
@@ -156,7 +158,6 @@
                 event.preventDefault();
                 const shipType = event.dataTransfer.getData('text/plain');
                 const shipLength = parseInt(event.dataTransfer.getData('ship-length'), 10);
-                const originId = event.dataTransfer.getData('origin-id');
                 const cell = event.target.closest('.cell');
 
                 // Only allow drop on player board
@@ -167,11 +168,9 @@
                         placeShip(cell, shipType, shipLength, 'player');
                         
                         // Remove the original ship from the ships container
-                        if (originId === 'ships-container') {
-                            const originalShip = document.querySelector(`.ship[data-ship-type="${shipType}"]`);
-                            if (originalShip) {
-                                originalShip.remove();
-                            }
+                        const originalShip = document.querySelector(`.ship[data-ship-type="${shipType}"]`);
+                        if (originalShip) {
+                            originalShip.remove();
                         }
                     }
                 }
@@ -267,3 +266,12 @@
             }
 
             // Function to handle opponent attack
+            function opponentTurn() {
+                const availableCells = Array.from(playerBoard.querySelectorAll('.cell:not(.hit):not(.miss)'));
+                if (availableCells.length === 0) {
+                    messageDisplay.textContent = 'Game Over! You lost.';
+                    isGameStarted = false;
+                    return;
+                }
+
+                const randomCell
