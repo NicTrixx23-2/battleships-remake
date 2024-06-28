@@ -20,7 +20,6 @@
             display: inline-block;
             vertical-align: top;
             margin: 10px;
-            position: relative; /* Required for positioning ships */
         }
 
         .game-board .cell {
@@ -34,13 +33,17 @@
         }
 
         .ship {
-            width: 60px; /* Adjust ship size as needed */
+            width: 30px; /* Adjust ship width based on its length */
             height: 30px;
             background-color: #ccc;
             border: 1px solid #666;
-            position: absolute;
-            z-index: 100; /* Ensure ships appear above cells */
-            pointer-events: none; /* Prevent ships from intercepting pointer events */
+            cursor: grab; /* Show grab cursor for draggable elements */
+        }
+
+        .ships-container {
+            display: inline-block;
+            vertical-align: top;
+            margin: 10px;
         }
 
         button {
@@ -59,6 +62,9 @@
 <body>
     <div class="game-container">
         <h1>Battleship Game</h1>
+        <div class="ships-container" id="ships-container">
+            <!-- Ships will be placed here -->
+        </div>
         <div class="game-board" id="player-board">
             <!-- Player's board -->
         </div>
@@ -74,6 +80,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const playerBoard = document.getElementById('player-board');
             const opponentBoard = document.getElementById('opponent-board');
+            const shipsContainer = document.getElementById('ships-container');
             const startGameBtn = document.getElementById('start-game');
             const messageDisplay = document.getElementById('message');
 
@@ -94,6 +101,8 @@
                         cell.dataset.row = i;
                         cell.dataset.col = j;
                         cell.classList.add('cell');
+                        cell.addEventListener('dragover', dragOver);
+                        cell.addEventListener('drop', drop);
                         boardElement.appendChild(cell);
                     }
                 }
@@ -105,20 +114,17 @@
 
             // Function to create draggable ships
             function createShips() {
-                const shipsContainer = document.createElement('div');
-                shipsContainer.classList.add('ships-container');
-
                 shipTypes.forEach((ship, index) => {
                     const shipElement = document.createElement('div');
                     shipElement.classList.add('ship');
                     shipElement.dataset.shipType = ship.name;
+                    shipElement.dataset.length = ship.length;
                     shipElement.draggable = true;
                     shipElement.textContent = ship.name;
-                    shipElement.style.top = `${index * 40}px`; // Adjust ship initial position
+                    shipElement.style.width = `${ship.length * 30}px`; // Adjust ship length
+                    shipElement.addEventListener('dragstart', dragStart);
                     shipsContainer.appendChild(shipElement);
                 });
-
-                document.body.appendChild(shipsContainer);
             }
 
             // Create draggable ships on page load
@@ -127,6 +133,7 @@
             // Function to handle drag start event
             function dragStart(event) {
                 event.dataTransfer.setData('text/plain', event.target.dataset.shipType);
+                event.dataTransfer.setData('ship-length', event.target.dataset.length);
             }
 
             // Function to handle drag over event (allow drop)
@@ -138,19 +145,47 @@
             function drop(event) {
                 event.preventDefault();
                 const shipType = event.dataTransfer.getData('text/plain');
-                const shipElement = document.querySelector(`.ship[data-ship-type="${shipType}"]`);
+                const shipLength = parseInt(event.dataTransfer.getData('ship-length'), 10);
                 const cell = event.target.closest('.cell');
-                if (cell && !cell.querySelector('.ship')) {
-                    const newShip = shipElement.cloneNode(true);
-                    newShip.style.pointerEvents = 'auto'; // Enable pointer events after drop
-                    cell.appendChild(newShip);
+
+                // Check if the cell is valid for dropping the ship
+                if (cell && isValidDrop(cell, shipLength)) {
+                    // Create and place the ship on the board
+                    placeShip(cell, shipType, shipLength);
                 }
             }
 
-            // Add event listeners for drag and drop
-            document.addEventListener('dragstart', dragStart);
-            document.addEventListener('dragover', dragOver);
-            document.addEventListener('drop', drop);
+            // Function to check if the ship can be placed at the specified cell
+            function isValidDrop(cell, length) {
+                const row = parseInt(cell.dataset.row, 10);
+                const col = parseInt(cell.dataset.col, 10);
+
+                // Ensure ship fits within the board horizontally
+                if (col + length > boardSize) {
+                    return false;
+                }
+
+                // Check if the cells are empty
+                for (let i = 0; i < length; i++) {
+                    const targetCell = document.querySelector(`.cell[data-row="${row}"][data-col="${col + i}"]`);
+                    if (targetCell.classList.contains('occupied')) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            // Function to place the ship on the board
+            function placeShip(cell, shipType, length) {
+                const row = parseInt(cell.dataset.row, 10);
+                const col = parseInt(cell.dataset.col, 10);
+
+                for (let i = 0; i < length; i++) {
+                    const targetCell = document.querySelector(`.cell[data-row="${row}"][data-col="${col + i}"]`);
+                    targetCell.classList.add('occupied');
+                    targetCell.textContent = shipType.charAt(0); // Display the first letter of the ship type
+                }
+            }
 
             // Function to start the game
             startGameBtn.addEventListener('click', function() {
