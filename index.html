@@ -32,6 +32,14 @@
             cursor: pointer;
         }
 
+        .player-board .cell {
+            background-color: lightblue;
+        }
+
+        .opponent-board .cell {
+            background-color: lightcoral;
+        }
+
         .ship {
             width: 150px;
             height: 30px;
@@ -67,10 +75,10 @@
         <div class="ships-container" id="ships-container">
             <!-- Ships will be placed here -->
         </div>
-        <div class="game-board" id="player-board">
+        <div class="game-board player-board" id="player-board">
             <!-- Player's board -->
         </div>
-        <div class="game-board" id="opponent-board">
+        <div class="game-board opponent-board" id="opponent-board">
             <!-- Opponent's board -->
         </div>
         <button id="start-game">Start Game</button>
@@ -98,7 +106,7 @@
             let opponentShips = [];
             let isGameStarted = false;
 
-            function createBoard(boardElement) {
+            function createBoard(boardElement, isPlayer) {
                 boardElement.innerHTML = '';
                 for (let i = 0; i < boardSize; i++) {
                     for (let j = 0; j < boardSize; j++) {
@@ -106,18 +114,21 @@
                         cell.dataset.row = i;
                         cell.dataset.col = j;
                         cell.classList.add('cell');
-                        cell.addEventListener('dragover', dragOver);
-                        cell.addEventListener('drop', drop);
-                        if (boardElement.id === 'opponent-board') {
+                        if (isPlayer) {
+                            cell.classList.add('player-cell');
+                        } else {
+                            cell.classList.add('opponent-cell');
                             cell.addEventListener('click', playerAttack);
                         }
+                        cell.addEventListener('dragover', dragOver);
+                        cell.addEventListener('drop', drop);
                         boardElement.appendChild(cell);
                     }
                 }
             }
 
-            createBoard(playerBoard);
-            createBoard(opponentBoard);
+            createBoard(playerBoard, true);
+            createBoard(opponentBoard, false);
 
             function createShips() {
                 shipsContainer.innerHTML = '';
@@ -193,7 +204,9 @@
                 for (let i = 0; i < length; i++) {
                     const targetCell = document.querySelector(`.cell[data-row="${row}"][data-col="${col + i}"]`);
                     targetCell.classList.add('occupied');
-                    targetCell.textContent = shipType.charAt(0);
+                    if (player === 'player') {
+                        targetCell.textContent = shipType.charAt(0);
+                    }
                     ship.positions.push({ row: row, col: col + i });
                 }
 
