@@ -105,7 +105,7 @@
     let playerShips = [];
     let opponentShips = [];
     let isGameStarted = false;
-    let playerExtraTurn = false; // Track if player has earned an extra turn
+    let opponentShipsRemaining = shipTypes.length; // Track remaining opponent ships
 
     function createBoard(boardElement, isPlayer) {
         boardElement.innerHTML = '';
@@ -199,7 +199,8 @@
         const ship = {
             type: shipType,
             length: length,
-            positions: []
+            positions: [],
+            hits: 0
         };
 
         for (let i = 0; i < length; i++) {
@@ -234,7 +235,7 @@
     }
 
     function playerAttack(event) {
-        if (!isGameStarted || playerExtraTurn) {
+        if (!isGameStarted) {
             return;
         }
 
@@ -245,21 +246,30 @@
 
         const row = parseInt(cell.dataset.row, 10);
         const col = parseInt(cell.dataset.col, 10);
-        const hit = opponentShips.some(ship => ship.positions.some(pos => pos.row === row && pos.col === col));
+        const hit = opponentShips.some(ship => {
+            const hitIndex = ship.positions.findIndex(pos => pos.row === row && pos.col === col);
+            if (hitIndex !== -1) {
+                ship.hits++;
+                if (ship.hits === ship.length) {
+                    opponentShipsRemaining--; // Decrease count of remaining opponent ships
+                    if (opponentShipsRemaining === 0) {
+                        messageDisplay.textContent = 'Congratulations! You sank all opponent ships. You win!';
+                        isGameStarted = false;
+                    }
+                }
+                return true;
+            }
+            return false;
+        });
 
         if (hit) {
             cell.classList.add('hit');
             cell.textContent = 'X';
             messageDisplay.textContent = 'You hit a ship!';
-            playerExtraTurn = true; // Player earns an extra turn
         } else {
             cell.classList.add('miss');
             cell.textContent = 'O';
             messageDisplay.textContent = 'You missed!';
-            opponentTurn();
-        }
-
-        if (!playerExtraTurn) {
             opponentTurn();
         }
     }
@@ -267,7 +277,7 @@
     function opponentTurn() {
         const availableCells = Array.from(playerBoard.querySelectorAll('.cell:not(.hit):not(.miss)'));
         if (availableCells.length === 0) {
-            messageDisplay.textContent = 'Game Over! You lost.';
+            messageDisplay.textContent = 'Game Over! You lost all your ships.';
             isGameStarted = false;
             return;
         }
@@ -275,24 +285,32 @@
         const randomCell = availableCells[Math.floor(Math.random() * availableCells.length)];
         const row = parseInt(randomCell.dataset.row, 10);
         const col = parseInt(randomCell.dataset.col, 10);
-        const hit = playerShips.some(ship => ship.positions.some(pos => pos.row === row && pos.col === col));
+        const hit = playerShips.some(ship => {
+            const hitIndex = ship.positions.findIndex(pos => pos.row === row && pos.col === col);
+            if (hitIndex !== -1) {
+                ship.hits++;
+                if (ship.hits === ship.length) {
+                    messageDisplay.textContent = 'Opponent sank your ' + ship.type + '!';
+                } else {
+                    messageDisplay.textContent = 'Opponent hit your ship!';
+                }
+                return true;
+            }
+            return false;
+        });
 
         if (hit) {
             randomCell.classList.add('hit');
             randomCell.textContent = 'X';
-            messageDisplay.textContent = 'Opponent hit your ship!';
-            opponentTurn(); // Opponent gets another turn
         } else {
             randomCell.classList.add('miss');
             randomCell.textContent = 'O';
-            messageDisplay.textContent = 'Opponent missed!';
         }
     }
 
     startGameBtn.addEventListener('click', function() {
         if (playerShips.length === shipTypes.length) {
             isGameStarted = true;
-            playerExtraTurn = false; // Reset extra turn flag
             placeOpponentShips();
             messageDisplay.textContent = 'Game started! Take your shot.';
         } else {
