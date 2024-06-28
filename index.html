@@ -22,13 +22,14 @@
             margin: 10px;
         }
 
-        .game-board div {
+        .game-board .cell {
             width: 30px;
             height: 30px;
             border: 1px solid black;
             display: inline-block;
             text-align: center;
             line-height: 30px;
+            cursor: pointer; /* Add cursor pointer for interactive cells */
         }
 
         button {
@@ -66,8 +67,6 @@
             const messageDisplay = document.getElementById('message');
 
             const boardSize = 10; // Size of the game board
-            let playerShips = []; // Array to store player's ships
-            let opponentShips = []; // Array to store opponent's ships
 
             // Function to create game boards
             function createBoard(boardElement) {
@@ -77,6 +76,7 @@
                         cell.dataset.row = i;
                         cell.dataset.col = j;
                         cell.classList.add('cell');
+                        cell.textContent = `${i},${j}`; // For testing, display cell coordinates
                         boardElement.appendChild(cell);
                     }
                 }
@@ -86,9 +86,23 @@
             createBoard(playerBoard);
             createBoard(opponentBoard);
 
+            // Function to handle cell click
+            function cellClickHandler(event) {
+                const clickedCell = event.target;
+                const row = clickedCell.dataset.row;
+                const col = clickedCell.dataset.col;
+                console.log(`Clicked cell: ${row},${col}`);
+                // Add your logic here to mark the cell or handle game actions
+            }
+
+            // Add click event listeners to all cells
+            const allCells = document.querySelectorAll('.cell');
+            allCells.forEach(cell => {
+                cell.addEventListener('click', cellClickHandler);
+            });
+
             // Function to start the game
             startGameBtn.addEventListener('click', function() {
-                // Logic to start the game
                 messageDisplay.textContent = 'Game started!';
                 // You can start implementing game logic here
             });
