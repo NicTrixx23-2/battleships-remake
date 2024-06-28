@@ -250,11 +250,14 @@
             const hitIndex = ship.positions.findIndex(pos => pos.row === row && pos.col === col);
             if (hitIndex !== -1) {
                 ship.hits++;
+                cell.classList.add('hit');
+                cell.textContent = 'X';
+                messageDisplay.textContent = 'You hit a ship!';
+
                 if (ship.hits === ship.length) {
-                    opponentShipsRemaining--; // Decrease count of remaining opponent ships
+                    opponentShipsRemaining--;
                     if (opponentShipsRemaining === 0) {
-                        messageDisplay.textContent = 'Congratulations! You sank all opponent ships. You win!';
-                        isGameStarted = false;
+                        endGame(true); // Player wins
                     }
                 }
                 return true;
@@ -262,11 +265,7 @@
             return false;
         });
 
-        if (hit) {
-            cell.classList.add('hit');
-            cell.textContent = 'X';
-            messageDisplay.textContent = 'You hit a ship!';
-        } else {
+        if (!hit) {
             cell.classList.add('miss');
             cell.textContent = 'O';
             messageDisplay.textContent = 'You missed!';
@@ -277,8 +276,7 @@
     function opponentTurn() {
         const availableCells = Array.from(playerBoard.querySelectorAll('.cell:not(.hit):not(.miss)'));
         if (availableCells.length === 0) {
-            messageDisplay.textContent = 'Game Over! You lost all your ships.';
-            isGameStarted = false;
+            endGame(false); // Player loses
             return;
         }
 
@@ -289,22 +287,36 @@
             const hitIndex = ship.positions.findIndex(pos => pos.row === row && pos.col === col);
             if (hitIndex !== -1) {
                 ship.hits++;
+                randomCell.classList.add('hit');
+                randomCell.textContent = 'X';
+
                 if (ship.hits === ship.length) {
                     messageDisplay.textContent = 'Opponent sank your ' + ship.type + '!';
                 } else {
                     messageDisplay.textContent = 'Opponent hit your ship!';
+                }
+
+                if (playerShips.every(ship => ship.hits === ship.length)) {
+                    endGame(false); // Player loses
                 }
                 return true;
             }
             return false;
         });
 
-        if (hit) {
-            randomCell.classList.add('hit');
-            randomCell.textContent = 'X';
-        } else {
+        if (!hit) {
             randomCell.classList.add('miss');
             randomCell.textContent = 'O';
+            messageDisplay.textContent = 'Opponent missed!';
+        }
+    }
+
+    function endGame(playerWon) {
+        isGameStarted = false;
+        if (playerWon) {
+            messageDisplay.textContent = 'Congratulations! You sank all opponent ships. You win!';
+        } else {
+            messageDisplay.textContent = 'Game Over! You lost all your ships.';
         }
     }
 
