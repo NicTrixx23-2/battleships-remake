@@ -134,6 +134,7 @@
             function dragStart(event) {
                 event.dataTransfer.setData('text/plain', event.target.dataset.shipType);
                 event.dataTransfer.setData('ship-length', event.target.dataset.length);
+                event.dataTransfer.setData('origin-id', event.target.parentNode.id);
             }
 
             // Function to handle drag over event (allow drop)
@@ -146,12 +147,24 @@
                 event.preventDefault();
                 const shipType = event.dataTransfer.getData('text/plain');
                 const shipLength = parseInt(event.dataTransfer.getData('ship-length'), 10);
+                const originId = event.dataTransfer.getData('origin-id');
                 const cell = event.target.closest('.cell');
 
-                // Check if the cell is valid for dropping the ship
-                if (cell && isValidDrop(cell, shipLength)) {
-                    // Create and place the ship on the board
-                    placeShip(cell, shipType, shipLength);
+                // Only allow drop on player board
+                if (cell && cell.closest('#player-board')) {
+                    // Check if the cell is valid for dropping the ship
+                    if (isValidDrop(cell, shipLength)) {
+                        // Create and place the ship on the board
+                        placeShip(cell, shipType, shipLength);
+                        
+                        // Remove the original ship from the ships container
+                        if (originId === 'ships-container') {
+                            const originalShip = document.querySelector(`.ship[data-ship-type="${shipType}"]`);
+                            if (originalShip) {
+                                originalShip.remove();
+                            }
+                        }
+                    }
                 }
             }
 
