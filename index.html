@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Battleship Game</title>
-    <button onclick="window.location.href='https://nictrixx23-2.github.io/games-hub';">Back to Game Hub</button>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -69,21 +68,14 @@
             font-weight: bold;
         }
 
-        .rotate-section {
-            margin-top: 20px;
+        .rotate-buttons {
+            display: flex;
+            justify-content: center;
+            margin: 10px;
         }
 
-        .rotate-button {
-            display: inline-block;
-            width: 60px;
-            height: 60px;
-            margin: 5px;
-            background-color: #eee;
-            border: 2px solid #333;
-            cursor: pointer;
-            font-size: 16px;
-            line-height: 56px;
-            text-align: center;
+        .rotate-buttons button {
+            margin: 0 5px;
         }
     </style>
 </head>
@@ -99,17 +91,16 @@
         <div class="game-board opponent-board" id="opponent-board">
             <!-- Opponent's board -->
         </div>
-        <button id="start-game">Start Game</button>
-        <div id="message"></div>
-
-        <!-- Rotate Section -->
-        <div class="rotate-section">
-            <h2>Rotate</h2>
-            <button class="rotate-button" id="rotate-battleship">H</button>
-            <button class="rotate-button" id="rotate-cruiser">J</button>
-            <button class="rotate-button" id="rotate-destroyer">K</button>
-            <button class="rotate-button" id="rotate-submarine">L</button>
+        <div class="rotate-buttons">
+            <button onclick="rotateShip('Carrier')">Rotate Carrier</button>
+            <button onclick="rotateShip('Battleship')">Rotate Battleship</button>
+            <button onclick="rotateShip('Cruiser')">Rotate Cruiser</button>
+            <button onclick="rotateShip('Submarine')">Rotate Submarine</button>
+            <button onclick="rotateShip('Destroyer')">Rotate Destroyer</button>
         </div>
+        <button id="start-game">Start Game</button>
+        <button onclick="window.location.href='https://example.com';">Back to Homepage</button>
+        <div id="message"></div>
     </div>
 
     <script>
@@ -122,18 +113,17 @@
 
             const boardSize = 8;
             const shipTypes = [
-                { name: 'Carrier', length: 5, button: 'H' },
-                { name: 'Battleship', length: 4, button: 'H' },
-                { name: 'Cruiser', length: 3, button: 'J' },
-                { name: 'Submarine', length: 3, button: 'L' },
-                { name: 'Destroyer', length: 2, button: 'K' }
+                { name: 'Carrier', length: 5, rotated: false },
+                { name: 'Battleship', length: 4, rotated: false },
+                { name: 'Cruiser', length: 3, rotated: false },
+                { name: 'Submarine', length: 3, rotated: false },
+                { name: 'Destroyer', length: 2, rotated: false }
             ];
 
             let playerShips = [];
             let opponentShips = [];
             let isGameStarted = false;
             let opponentShipsRemaining = shipTypes.length; // Track remaining opponent ships
-            let selectedShip = null;
 
             function createBoard(boardElement, isPlayer) {
                 boardElement.innerHTML = '';
@@ -166,6 +156,7 @@
                     shipElement.classList.add('ship');
                     shipElement.dataset.shipType = ship.name;
                     shipElement.dataset.length = ship.length;
+                    shipElement.dataset.rotated = ship.rotated;
                     shipElement.draggable = true;
                     shipElement.textContent = ship.name;
                     shipElement.style.width = `${ship.length * 30}px`;
@@ -177,9 +168,9 @@
             createShips();
 
             function dragStart(event) {
-                selectedShip = event.target;
                 event.dataTransfer.setData('text/plain', event.target.dataset.shipType);
                 event.dataTransfer.setData('ship-length', event.target.dataset.length);
+                event.dataTransfer.setData('ship-rotated', event.target.dataset.rotated);
             }
 
             function dragOver(event) {
@@ -190,38 +181,50 @@
                 event.preventDefault();
                 const shipType = event.dataTransfer.getData('text/plain');
                 const shipLength = parseInt(event.dataTransfer.getData('ship-length'), 10);
+                const shipRotated = event.dataTransfer.getData('ship-rotated') === 'true';
                 const cell = event.target.closest('.cell');
 
                 if (cell && cell.closest('#player-board')) {
-                    if (isValidDrop(cell, shipLength)) {
-                        placeShip(cell, shipType, shipLength, 'player');
+                    if (isValidDrop(cell, shipLength, shipRotated)) {
+                        placeShip(cell, shipType, shipLength, shipRotated, 'player');
 
-                        if (selectedShip) {
-                            selectedShip.remove();
-                            selectedShip = null;
+                        const originalShip = document.querySelector(`.ship[data-ship-type="${shipType}"]`);
+                        if (originalShip) {
+                            originalShip.remove();
                         }
                     }
                 }
             }
 
-            function isValidDrop(cell, length) {
+            function isValidDrop(cell, length, rotated) {
                 const row = parseInt(cell.dataset.row, 10);
                 const col = parseInt(cell.dataset.col, 10);
 
-                if (col + length > boardSize) {
-                    return false;
-                }
-
-                for (let i = 0; i < length; i++) {
-                    const targetCell = document.querySelector(`.cell[data-row="${row}"][data-col="${col + i}"]`);
-                    if (targetCell.classList.contains('occupied')) {
+                if (rotated) {
+                    if (row + length > boardSize) {
                         return false;
+                    }
+                    for (let i = 0; i < length; i++) {
+                        const targetCell = document.querySelector(`.cell[data-row="${row + i}"][data-col="${col}"]`);
+                        if (targetCell.classList.contains('occupied')) {
+                            return false;
+                        }
+                    }
+                } else {
+                    if (col + length > boardSize) {
+                        return false;
+                    }
+                    for (let i = 0; i < length; i++) {
+                        const targetCell = document.querySelector(`.cell[data-row="${row}"][data-col="${col + i}"]`);
+                        if (targetCell.classList.contains('occupied')) {
+                            return false;
+                        }
                     }
                 }
                 return true;
             }
 
-            function placeShip(cell, shipType, length, player) {
+            function placeShip(cell, shipType, length, rotated, player) {
                 const row = parseInt(cell.dataset.row, 10);
                 const col = parseInt(cell.dataset.col, 10);
 
@@ -232,19 +235,45 @@
                     hits: 0
                 };
 
-                for (let i = 0; i < length; i++) {
-                    const targetCell = document.querySelector(`.cell[data-row="${row}"][data-col="${col + i}"]`);
-                    targetCell.classList.add('occupied');
-                    if (player === 'player') {
-                        targetCell.textContent = shipType.charAt(0);
+                if (rotated) {
+                    for (let i = 0; i < length; i++) {
+                        const targetCell = document.querySelector(`.cell[data-row="${row + i}"][data-col="${col}"]`);
+                        targetCell.classList.add('occupied');
+                        if (player === 'player') {
+                            targetCell.textContent = shipType.charAt(0);
+                        }
+                        ship.positions.push({ row: row + i, col: col });
                     }
-                    ship.positions.push({ row: row, col: col + i });
+                } else {
+                    for (let i = 0; i < length; i++) {
+                        const targetCell = document.querySelector(`.cell[data-row="${row}"][data-col="${col + i}"]`);
+                        targetCell.classList.add('occupied');
+                        if (player === 'player') {
+                            targetCell.textContent = shipType.charAt(0);
+                        }
+                        ship.positions.push({ row: row, col: col + i });
+                    }
                 }
 
                 if (player === 'player') {
                     playerShips.push(ship);
                 } else {
                     opponentShips.push(ship);
+                }
+            }
+
+            function rotateShip(shipName) {
+                const shipElement = document.querySelector(`.ship[data-ship-type="${shipName}"]`);
+                if (shipElement) {
+                    const rotated = shipElement.dataset.rotated === 'true';
+                    shipElement.dataset.rotated = !rotated;
+                    if (rotated) {
+                        shipElement.style.width = `${shipElement.dataset.length * 30}px`;
+                        shipElement.style.height = '30px';
+                    } else {
+                        shipElement.style.width = '30px';
+                        shipElement.style.height = `${shipElement.dataset.length * 30}px`;
+                    }
                 }
             }
 
@@ -255,8 +284,8 @@
                         const row = Math.floor(Math.random() * boardSize);
                         const col = Math.floor(Math.random() * (boardSize - ship.length));
                         const cell = document.querySelector(`#opponent-board .cell[data-row="${row}"][data-col="${col}"]`);
-                        if (isValidDrop(cell, ship.length)) {
-                            placeShip(cell, ship.name, ship.length, 'opponent');
+                        if (isValidDrop(cell, ship.length, false)) {
+                            placeShip(cell, ship.name, ship.length, false, 'opponent');
                             placed = true;
                         }
                     }
@@ -356,43 +385,6 @@
                     messageDisplay.textContent = 'Game started! Take your shot.';
                 } else {
                     messageDisplay.textContent = 'Place all your ships first.';
-                }
-            });
-
-            // Rotate ship functions
-            function rotateShip(shipType) {
-                const ship = document.querySelector(`.ship[data-ship-type="${shipType}"]`);
-                if (!ship) return;
-                const shipLength = parseInt(ship.dataset.length, 10);
-
-                if (ship.style.width === `${shipLength * 30}px`) {
-                    ship.style.width = '30px';
-                    ship.style.height = `${shipLength * 30}px`;
-                } else {
-                    ship.style.width = `${shipLength * 30}px`;
-                    ship.style.height = '30px';
-                }
-            }
-
-            document.getElementById('rotate-battleship').addEventListener('click', () => rotateShip('Battleship'));
-            document.getElementById('rotate-cruiser').addEventListener('click', () => rotateShip('Cruiser'));
-            document.getElementById('rotate-destroyer').addEventListener('click', () => rotateShip('Destroyer'));
-            document.getElementById('rotate-submarine').addEventListener('click', () => rotateShip('Submarine'));
-
-            document.addEventListener('keydown', function(event) {
-                switch (event.key.toUpperCase()) {
-                    case 'H':
-                        rotateShip('Battleship');
-                        break;
-                    case 'J':
-                        rotateShip('Cruiser');
-                        break;
-                    case 'K':
-                        rotateShip('Destroyer');
-                        break;
-                    case 'L':
-                        rotateShip('Submarine');
-                        break;
                 }
             });
         });
