@@ -67,6 +67,23 @@
             margin-top: 10px;
             font-weight: bold;
         }
+
+        .rotate-section {
+            margin-top: 20px;
+        }
+
+        .rotate-button {
+            display: inline-block;
+            width: 60px;
+            height: 60px;
+            margin: 5px;
+            background-color: #eee;
+            border: 2px solid #333;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 56px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -83,253 +100,301 @@
         </div>
         <button id="start-game">Start Game</button>
         <div id="message"></div>
+
+        <!-- Rotate Section -->
+        <div class="rotate-section">
+            <h2>Rotate</h2>
+            <button class="rotate-button" id="rotate-battleship">H</button>
+            <button class="rotate-button" id="rotate-cruiser">J</button>
+            <button class="rotate-button" id="rotate-destroyer">K</button>
+            <button class="rotate-button" id="rotate-submarine">L</button>
+        </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-    const playerBoard = document.getElementById('player-board');
-    const opponentBoard = document.getElementById('opponent-board');
-    const shipsContainer = document.getElementById('ships-container');
-    const startGameBtn = document.getElementById('start-game');
-    const messageDisplay = document.getElementById('message');
+            const playerBoard = document.getElementById('player-board');
+            const opponentBoard = document.getElementById('opponent-board');
+            const shipsContainer = document.getElementById('ships-container');
+            const startGameBtn = document.getElementById('start-game');
+            const messageDisplay = document.getElementById('message');
 
-    const boardSize = 8;
-    const shipTypes = [
-        { name: 'Carrier', length: 5 },
-        { name: 'Battleship', length: 4 },
-        { name: 'Cruiser', length: 3 },
-        { name: 'Submarine', length: 3 },
-        { name: 'Destroyer', length: 2 }
-    ];
+            const boardSize = 8;
+            const shipTypes = [
+                { name: 'Carrier', length: 5, button: 'H' },
+                { name: 'Battleship', length: 4, button: 'H' },
+                { name: 'Cruiser', length: 3, button: 'J' },
+                { name: 'Submarine', length: 3, button: 'L' },
+                { name: 'Destroyer', length: 2, button: 'K' }
+            ];
 
-    let playerShips = [];
-    let opponentShips = [];
-    let isGameStarted = false;
-    let opponentShipsRemaining = shipTypes.length; // Track remaining opponent ships
+            let playerShips = [];
+            let opponentShips = [];
+            let isGameStarted = false;
+            let opponentShipsRemaining = shipTypes.length; // Track remaining opponent ships
+            let selectedShip = null;
 
-    function createBoard(boardElement, isPlayer) {
-        boardElement.innerHTML = '';
-        for (let i = 0; i < boardSize; i++) {
-            for (let j = 0; j < boardSize; j++) {
-                const cell = document.createElement('div');
-                cell.dataset.row = i;
-                cell.dataset.col = j;
-                cell.classList.add('cell');
-                if (isPlayer) {
-                    cell.classList.add('player-cell');
-                } else {
-                    cell.classList.add('opponent-cell');
-                    cell.addEventListener('click', playerAttack);
-                }
-                cell.addEventListener('dragover', dragOver);
-                cell.addEventListener('drop', drop);
-                boardElement.appendChild(cell);
-            }
-        }
-    }
-
-    createBoard(playerBoard, true);
-    createBoard(opponentBoard, false);
-
-    function createShips() {
-        shipsContainer.innerHTML = '';
-        shipTypes.forEach(ship => {
-            const shipElement = document.createElement('div');
-            shipElement.classList.add('ship');
-            shipElement.dataset.shipType = ship.name;
-            shipElement.dataset.length = ship.length;
-            shipElement.draggable = true;
-            shipElement.textContent = ship.name;
-            shipElement.style.width = `${ship.length * 30}px`;
-            shipElement.addEventListener('dragstart', dragStart);
-            shipsContainer.appendChild(shipElement);
-        });
-    }
-
-    createShips();
-
-    function dragStart(event) {
-        event.dataTransfer.setData('text/plain', event.target.dataset.shipType);
-        event.dataTransfer.setData('ship-length', event.target.dataset.length);
-    }
-
-    function dragOver(event) {
-        event.preventDefault();
-    }
-
-    function drop(event) {
-        event.preventDefault();
-        const shipType = event.dataTransfer.getData('text/plain');
-        const shipLength = parseInt(event.dataTransfer.getData('ship-length'), 10);
-        const cell = event.target.closest('.cell');
-
-        if (cell && cell.closest('#player-board')) {
-            if (isValidDrop(cell, shipLength)) {
-                placeShip(cell, shipType, shipLength, 'player');
-
-                const originalShip = document.querySelector(`.ship[data-ship-type="${shipType}"]`);
-                if (originalShip) {
-                    originalShip.remove();
+            function createBoard(boardElement, isPlayer) {
+                boardElement.innerHTML = '';
+                for (let i = 0; i < boardSize; i++) {
+                    for (let j = 0; j < boardSize; j++) {
+                        const cell = document.createElement('div');
+                        cell.dataset.row = i;
+                        cell.dataset.col = j;
+                        cell.classList.add('cell');
+                        if (isPlayer) {
+                            cell.classList.add('player-cell');
+                        } else {
+                            cell.classList.add('opponent-cell');
+                            cell.addEventListener('click', playerAttack);
+                        }
+                        cell.addEventListener('dragover', dragOver);
+                        cell.addEventListener('drop', drop);
+                        boardElement.appendChild(cell);
+                    }
                 }
             }
-        }
-    }
 
-    function isValidDrop(cell, length) {
-        const row = parseInt(cell.dataset.row, 10);
-        const col = parseInt(cell.dataset.col, 10);
+            createBoard(playerBoard, true);
+            createBoard(opponentBoard, false);
 
-        if (col + length > boardSize) {
-            return false;
-        }
-
-        for (let i = 0; i < length; i++) {
-            const targetCell = document.querySelector(`.cell[data-row="${row}"][data-col="${col + i}"]`);
-            if (targetCell.classList.contains('occupied')) {
-                return false;
+            function createShips() {
+                shipsContainer.innerHTML = '';
+                shipTypes.forEach(ship => {
+                    const shipElement = document.createElement('div');
+                    shipElement.classList.add('ship');
+                    shipElement.dataset.shipType = ship.name;
+                    shipElement.dataset.length = ship.length;
+                    shipElement.draggable = true;
+                    shipElement.textContent = ship.name;
+                    shipElement.style.width = `${ship.length * 30}px`;
+                    shipElement.addEventListener('dragstart', dragStart);
+                    shipsContainer.appendChild(shipElement);
+                });
             }
-        }
-        return true;
-    }
 
-    function placeShip(cell, shipType, length, player) {
-        const row = parseInt(cell.dataset.row, 10);
-        const col = parseInt(cell.dataset.col, 10);
+            createShips();
 
-        const ship = {
-            type: shipType,
-            length: length,
-            positions: [],
-            hits: 0
-        };
-
-        for (let i = 0; i < length; i++) {
-            const targetCell = document.querySelector(`.cell[data-row="${row}"][data-col="${col + i}"]`);
-            targetCell.classList.add('occupied');
-            if (player === 'player') {
-                targetCell.textContent = shipType.charAt(0);
+            function dragStart(event) {
+                selectedShip = event.target;
+                event.dataTransfer.setData('text/plain', event.target.dataset.shipType);
+                event.dataTransfer.setData('ship-length', event.target.dataset.length);
             }
-            ship.positions.push({ row: row, col: col + i });
-        }
 
-        if (player === 'player') {
-            playerShips.push(ship);
-        } else {
-            opponentShips.push(ship);
-        }
-    }
+            function dragOver(event) {
+                event.preventDefault();
+            }
 
-    function placeOpponentShips() {
-        shipTypes.forEach(ship => {
-            let placed = false;
-            while (!placed) {
-                const row = Math.floor(Math.random() * boardSize);
-                const col = Math.floor(Math.random() * (boardSize - ship.length));
-                const cell = document.querySelector(`#opponent-board .cell[data-row="${row}"][data-col="${col}"]`);
-                if (isValidDrop(cell, ship.length)) {
-                    placeShip(cell, ship.name, ship.length, 'opponent');
-                    placed = true;
+            function drop(event) {
+                event.preventDefault();
+                const shipType = event.dataTransfer.getData('text/plain');
+                const shipLength = parseInt(event.dataTransfer.getData('ship-length'), 10);
+                const cell = event.target.closest('.cell');
+
+                if (cell && cell.closest('#player-board')) {
+                    if (isValidDrop(cell, shipLength)) {
+                        placeShip(cell, shipType, shipLength, 'player');
+
+                        if (selectedShip) {
+                            selectedShip.remove();
+                            selectedShip = null;
+                        }
+                    }
                 }
             }
-        });
-    }
 
-    function playerAttack(event) {
-        if (!isGameStarted) {
-            return;
-        }
+            function isValidDrop(cell, length) {
+                const row = parseInt(cell.dataset.row, 10);
+                const col = parseInt(cell.dataset.col, 10);
 
-        const cell = event.target;
-        if (cell.classList.contains('hit') || cell.classList.contains('miss')) {
-            return;
-        }
+                if (col + length > boardSize) {
+                    return false;
+                }
 
-        const row = parseInt(cell.dataset.row, 10);
-        const col = parseInt(cell.dataset.col, 10);
-        const hit = opponentShips.some(ship => {
-            const hitIndex = ship.positions.findIndex(pos => pos.row === row && pos.col === col);
-            if (hitIndex !== -1) {
-                ship.hits++;
-                cell.classList.add('hit');
-                cell.textContent = 'X';
-                messageDisplay.textContent = 'You hit a ship!';
-
-                if (ship.hits === ship.length) {
-                    opponentShipsRemaining--;
-                    if (opponentShipsRemaining === 0) {
-                        endGame(true); // Player wins
+                for (let i = 0; i < length; i++) {
+                    const targetCell = document.querySelector(`.cell[data-row="${row}"][data-col="${col + i}"]`);
+                    if (targetCell.classList.contains('occupied')) {
+                        return false;
                     }
                 }
                 return true;
             }
-            return false;
-        });
 
-        if (!hit) {
-            cell.classList.add('miss');
-            cell.textContent = 'O';
-            messageDisplay.textContent = 'You missed!';
-            opponentTurn();
-        }
-    }
+            function placeShip(cell, shipType, length, player) {
+                const row = parseInt(cell.dataset.row, 10);
+                const col = parseInt(cell.dataset.col, 10);
 
-    function opponentTurn() {
-        const availableCells = Array.from(playerBoard.querySelectorAll('.cell:not(.hit):not(.miss)'));
-        if (availableCells.length === 0) {
-            endGame(false); // Player loses
-            return;
-        }
+                const ship = {
+                    type: shipType,
+                    length: length,
+                    positions: [],
+                    hits: 0
+                };
 
-        const randomCell = availableCells[Math.floor(Math.random() * availableCells.length)];
-        const row = parseInt(randomCell.dataset.row, 10);
-        const col = parseInt(randomCell.dataset.col, 10);
-        const hit = playerShips.some(ship => {
-            const hitIndex = ship.positions.findIndex(pos => pos.row === row && pos.col === col);
-            if (hitIndex !== -1) {
-                ship.hits++;
-                randomCell.classList.add('hit');
-                randomCell.textContent = 'X';
+                for (let i = 0; i < length; i++) {
+                    const targetCell = document.querySelector(`.cell[data-row="${row}"][data-col="${col + i}"]`);
+                    targetCell.classList.add('occupied');
+                    if (player === 'player') {
+                        targetCell.textContent = shipType.charAt(0);
+                    }
+                    ship.positions.push({ row: row, col: col + i });
+                }
 
-                if (ship.hits === ship.length) {
-                    messageDisplay.textContent = 'Opponent sank your ' + ship.type + '!';
+                if (player === 'player') {
+                    playerShips.push(ship);
                 } else {
-                    messageDisplay.textContent = 'Opponent hit your ship!';
+                    opponentShips.push(ship);
                 }
-
-                if (playerShips.every(ship => ship.hits === ship.length)) {
-                    endGame(false); // Player loses
-                }
-                return true;
             }
-            return false;
+
+            function placeOpponentShips() {
+                shipTypes.forEach(ship => {
+                    let placed = false;
+                    while (!placed) {
+                        const row = Math.floor(Math.random() * boardSize);
+                        const col = Math.floor(Math.random() * (boardSize - ship.length));
+                        const cell = document.querySelector(`#opponent-board .cell[data-row="${row}"][data-col="${col}"]`);
+                        if (isValidDrop(cell, ship.length)) {
+                            placeShip(cell, ship.name, ship.length, 'opponent');
+                            placed = true;
+                        }
+                    }
+                });
+            }
+
+            function playerAttack(event) {
+                if (!isGameStarted) {
+                    return;
+                }
+
+                const cell = event.target;
+                if (cell.classList.contains('hit') || cell.classList.contains('miss')) {
+                    return;
+                }
+
+                const row = parseInt(cell.dataset.row, 10);
+                const col = parseInt(cell.dataset.col, 10);
+                const hit = opponentShips.some(ship => {
+                    const hitIndex = ship.positions.findIndex(pos => pos.row === row && pos.col === col);
+                    if (hitIndex !== -1) {
+                        ship.hits++;
+                        cell.classList.add('hit');
+                        cell.textContent = 'X';
+                        messageDisplay.textContent = 'You hit a ship!';
+
+                        if (ship.hits === ship.length) {
+                            opponentShipsRemaining--;
+                            if (opponentShipsRemaining === 0) {
+                                endGame(true); // Player wins
+                            }
+                        }
+                        return true;
+                    }
+                    return false;
+                });
+
+                if (!hit) {
+                    cell.classList.add('miss');
+                    cell.textContent = 'O';
+                    messageDisplay.textContent = 'You missed!';
+                    opponentTurn();
+                }
+            }
+
+            function opponentTurn() {
+                const availableCells = Array.from(playerBoard.querySelectorAll('.cell:not(.hit):not(.miss)'));
+                if (availableCells.length === 0) {
+                    endGame(false); // Player loses
+                    return;
+                }
+
+                const randomCell = availableCells[Math.floor(Math.random() * availableCells.length)];
+                const row = parseInt(randomCell.dataset.row, 10);
+                const col = parseInt(randomCell.dataset.col, 10);
+                const hit = playerShips.some(ship => {
+                    const hitIndex = ship.positions.findIndex(pos => pos.row === row && pos.col === col);
+                    if (hitIndex !== -1) {
+                        ship.hits++;
+                        randomCell.classList.add('hit');
+                        randomCell.textContent = 'X';
+
+                        if (ship.hits === ship.length) {
+                            messageDisplay.textContent = 'Opponent sank your ' + ship.type + '!';
+                        } else {
+                            messageDisplay.textContent = 'Opponent hit your ship!';
+                        }
+
+                        if (playerShips.every(ship => ship.hits === ship.length)) {
+                            endGame(false); // Player loses
+                        }
+                        return true;
+                    }
+                    return false;
+                });
+
+                if (!hit) {
+                    randomCell.classList.add('miss');
+                    randomCell.textContent = 'O';
+                    messageDisplay.textContent = 'Opponent missed!';
+                }
+            }
+
+            function endGame(playerWon) {
+                isGameStarted = false;
+                if (playerWon) {
+                    messageDisplay.textContent = 'Congratulations! You sank all opponent ships. You win!';
+                } else {
+                    messageDisplay.textContent = 'Game Over! You lost all your ships.';
+                }
+            }
+
+            startGameBtn.addEventListener('click', function() {
+                if (playerShips.length === shipTypes.length) {
+                    isGameStarted = true;
+                    placeOpponentShips();
+                    messageDisplay.textContent = 'Game started! Take your shot.';
+                } else {
+                    messageDisplay.textContent = 'Place all your ships first.';
+                }
+            });
+
+            // Rotate ship functions
+            function rotateShip(shipType) {
+                const ship = document.querySelector(`.ship[data-ship-type="${shipType}"]`);
+                if (!ship) return;
+                const shipLength = parseInt(ship.dataset.length, 10);
+
+                if (ship.style.width === `${shipLength * 30}px`) {
+                    ship.style.width = '30px';
+                    ship.style.height = `${shipLength * 30}px`;
+                } else {
+                    ship.style.width = `${shipLength * 30}px`;
+                    ship.style.height = '30px';
+                }
+            }
+
+            document.getElementById('rotate-battleship').addEventListener('click', () => rotateShip('Battleship'));
+            document.getElementById('rotate-cruiser').addEventListener('click', () => rotateShip('Cruiser'));
+            document.getElementById('rotate-destroyer').addEventListener('click', () => rotateShip('Destroyer'));
+            document.getElementById('rotate-submarine').addEventListener('click', () => rotateShip('Submarine'));
+
+            document.addEventListener('keydown', function(event) {
+                switch (event.key.toUpperCase()) {
+                    case 'H':
+                        rotateShip('Battleship');
+                        break;
+                    case 'J':
+                        rotateShip('Cruiser');
+                        break;
+                    case 'K':
+                        rotateShip('Destroyer');
+                        break;
+                    case 'L':
+                        rotateShip('Submarine');
+                        break;
+                }
+            });
         });
-
-        if (!hit) {
-            randomCell.classList.add('miss');
-            randomCell.textContent = 'O';
-            messageDisplay.textContent = 'Opponent missed!';
-        }
-    }
-
-    function endGame(playerWon) {
-        isGameStarted = false;
-        if (playerWon) {
-            messageDisplay.textContent = 'Congratulations! You sank all opponent ships. You win!';
-        } else {
-            messageDisplay.textContent = 'Game Over! You lost all your ships.';
-        }
-    }
-
-    startGameBtn.addEventListener('click', function() {
-        if (playerShips.length === shipTypes.length) {
-            isGameStarted = true;
-            placeOpponentShips();
-            messageDisplay.textContent = 'Game started! Take your shot.';
-        } else {
-            messageDisplay.textContent = 'Place all your ships first.';
-        }
-    });
-});
     </script>
 </body>
 </html>
