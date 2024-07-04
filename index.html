@@ -67,16 +67,6 @@
             margin-top: 10px;
             font-weight: bold;
         }
-
-        .rotate-buttons {
-            display: flex;
-            justify-content: center;
-            margin: 10px;
-        }
-
-        .rotate-buttons button {
-            margin: 0 5px;
-        }
     </style>
 </head>
 <body>
@@ -91,13 +81,7 @@
         <div class="game-board opponent-board" id="opponent-board">
             <!-- Opponent's board -->
         </div>
-        <div class="rotate-buttons">
-            <button onclick="rotateShip('Carrier')">Rotate Carrier</button>
-            <button onclick="rotateShip('Battleship')">Rotate Battleship</button>
-            <button onclick="rotateShip('Cruiser')">Rotate Cruiser</button>
-            <button onclick="rotateShip('Submarine')">Rotate Submarine</button>
-            <button onclick="rotateShip('Destroyer')">Rotate Destroyer</button>
-        </div>
+        <button id="rotate-ship">Rotate Ship</button>
         <button id="start-game">Start Game</button>
         <button onclick="window.location.href='https://example.com';">Back to Homepage</button>
         <div id="message"></div>
@@ -109,6 +93,7 @@
             const opponentBoard = document.getElementById('opponent-board');
             const shipsContainer = document.getElementById('ships-container');
             const startGameBtn = document.getElementById('start-game');
+            const rotateShipBtn = document.getElementById('rotate-ship');
             const messageDisplay = document.getElementById('message');
 
             const boardSize = 8;
@@ -124,6 +109,7 @@
             let opponentShips = [];
             let isGameStarted = false;
             let opponentShipsRemaining = shipTypes.length; // Track remaining opponent ships
+            let selectedShip = null;
 
             function createBoard(boardElement, isPlayer) {
                 boardElement.innerHTML = '';
@@ -161,6 +147,7 @@
                     shipElement.textContent = ship.name;
                     shipElement.style.width = `${ship.length * 30}px`;
                     shipElement.addEventListener('dragstart', dragStart);
+                    shipElement.addEventListener('click', selectShip);
                     shipsContainer.appendChild(shipElement);
                 });
             }
@@ -262,20 +249,25 @@
                 }
             }
 
-            function rotateShip(shipName) {
-                const shipElement = document.querySelector(`.ship[data-ship-type="${shipName}"]`);
-                if (shipElement) {
-                    const rotated = shipElement.dataset.rotated === 'true';
-                    shipElement.dataset.rotated = !rotated;
+            function rotateSelectedShip() {
+                if (selectedShip) {
+                    const rotated = selectedShip.dataset.rotated === 'true';
+                    selectedShip.dataset.rotated = !rotated;
                     if (rotated) {
-                        shipElement.style.width = `${shipElement.dataset.length * 30}px`;
-                        shipElement.style.height = '30px';
+                        selectedShip.style.width = `${selectedShip.dataset.length * 30}px`;
+                        selectedShip.style.height = '30px';
                     } else {
-                        shipElement.style.width = '30px';
-                        shipElement.style.height = `${shipElement.dataset.length * 30}px`;
+                        selectedShip.style.width = '30px';
+                        selectedShip.style.height = `${selectedShip.dataset.length * 30}px`;
                     }
                 }
             }
+
+            function selectShip(event) {
+                selectedShip = event.target;
+            }
+
+            rotateShipBtn.addEventListener('click', rotateSelectedShip);
 
             function placeOpponentShips() {
                 shipTypes.forEach(ship => {
